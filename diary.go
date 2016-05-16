@@ -43,64 +43,62 @@ type (
 )
 
 // SetLevel creates a function that sets the log level. Generally, used when create a new logger.
-func SetLevel(lvl Level) func(*Logger) error {
-	return func(l *Logger) error {
+func SetLevel(lvl Level) func(*Logger) {
+	return func(l *Logger) {
 		l.level = lvl
-		return nil
+		return
 	}
 }
 
 // SetContext creates a function that sets the context. Generally, used when create a new logger.
-func SetContext(ctx Context) func(*Logger) error {
-	return func(l *Logger) error {
+func SetContext(ctx Context) func(*Logger) {
+	return func(l *Logger) {
 		l.context = ctx
-		return nil
+		return
 	}
 }
 
 // SetWriter creates a function that will set the writer. Generally, used when create a new logger.
-func SetWriter(w io.Writer) func(*Logger) error {
-	return func(l *Logger) error {
+func SetWriter(w io.Writer) func(*Logger) {
+	return func(l *Logger) {
 		l.writer = w
-		return nil
+		return
 	}
 }
 
 // SetTimeKey creates a funtion that sets the time key. Generally, used when create a new logger.
-func SetTimeKey(key string) func(*Logger) error {
-	return func(l *Logger) error {
+func SetTimeKey(key string) func(*Logger) {
+	return func(l *Logger) {
 		l.timeKey = key
-		return nil
+		return
 	}
 }
 
 // SetLevelKey creates a funtion that sets the level key. Generally, used when create a new logger.
-func SetLevelKey(key string) func(*Logger) error {
-	return func(l *Logger) error {
+func SetLevelKey(key string) func(*Logger) {
+	return func(l *Logger) {
 		l.levelKey = key
-		return nil
+		return
 	}
 }
 
 // SetMessageKey creates a funtion that sets the message key. Generally, used when create a new logger.
-func SetMessageKey(key string) func(*Logger) error {
-	return func(l *Logger) error {
+func SetMessageKey(key string) func(*Logger) {
+	return func(l *Logger) {
 		l.messageKey = key
-		return nil
+		return
 	}
 }
 
-func (l *Logger) doOptions(options []func(*Logger) error) error {
+func (l *Logger) doOptions(options []func(*Logger)) {
 	for _, f := range options {
-		if err := f(l); err != nil {
-			return err
-		}
+		f(l)
 	}
-	return nil
+	return
 }
 
 // New creates a logger.
-func New(context Context, options ...func(*Logger) error) (*Logger, error) {
+func New(context Context, options ...func(*Logger)) *Logger {
 	l := &Logger{
 		level:      LevelInfo,
 		context:    context,
@@ -110,15 +108,13 @@ func New(context Context, options ...func(*Logger) error) (*Logger, error) {
 		messageKey: DefaultMessageKey,
 	}
 
-	if err := l.doOptions(options); err != nil {
-		return nil, err
-	}
+	l.doOptions(options)
 
-	return l, nil
+	return l
 }
 
 // New creates a child logger.  Initial options are inherited from the parent.
-func (l *Logger) New(context Context, options ...func(*Logger) error) (*Logger, error) {
+func (l *Logger) New(context Context, options ...func(*Logger)) *Logger {
 	n := &Logger{
 		level:      l.level,
 		writer:     l.writer,
@@ -139,11 +135,9 @@ func (l *Logger) New(context Context, options ...func(*Logger) error) (*Logger, 
 
 	n.context = ctx
 
-	if err := n.doOptions(options); err != nil {
-		return nil, err
-	}
+	n.doOptions(options)
 
-	return n, nil
+	return n
 }
 
 // Fatal logs a message at the "fatal" log level. It then calls os.Exit
@@ -201,7 +195,6 @@ func (l Level) String() string {
 		return "dbug"
 	case LevelInfo:
 		return "info"
-		return "warn"
 	case LevelError:
 		return "eror"
 	case LevelFatal:
