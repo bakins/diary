@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"time"
+
+	"github.com/go-stack/stack"
 )
 
 // Default keys for log output
@@ -14,6 +16,7 @@ const (
 	DefaultTimeKey    = "ts"
 	DefaultLevelKey   = "lvl"
 	DefaultMessageKey = "message"
+	DefaultCallerKey  = "caller"
 )
 
 // Level is the level of the log entry
@@ -39,6 +42,7 @@ type (
 		timeKey    string
 		levelKey   string
 		messageKey string
+		callerKey  string
 	}
 )
 
@@ -98,6 +102,14 @@ func SetMessageKey(key string) func(*Logger) error {
 	}
 }
 
+// SetCallerKey creates a function that will set the caller key. Generally, used when create a new logger.
+func SetCallerKey(key string) func(*Logger) error {
+	return func(l *Logger) error {
+		l.callerKey = key
+		return nil
+	}
+}
+
 func (l *Logger) doOptions(options []func(*Logger) error) error {
 	for _, f := range options {
 		if err := f(l); err != nil {
@@ -128,6 +140,7 @@ func New(context Context, options ...func(*Logger) error) (*Logger, error) {
 // New creates a child logger.  Initial options are inherited from the parent.
 func (l *Logger) New(context Context, options ...func(*Logger) error) (*Logger, error) {
 	n := &Logger{
+		callerKey:  l.callerKey,
 		level:      l.level,
 		writer:     l.writer,
 		timeKey:    l.timeKey,
@@ -195,6 +208,7 @@ func (l *Logger) write(level Level, msg string, context []Context) {
 	record[l.timeKey] = time.Now()
 	record[l.messageKey] = msg
 	record[l.levelKey] = l.level.String()
+	record[l.callerKey] = stack.Caller(2)
 
 	if data, err := json.Marshal(record); err == nil {
 		data = append(data, '\n')

@@ -91,3 +91,12 @@ func TestSetMessageKey(t *testing.T) {
 	l.Debug("this is the message")
 	assert.False(t, strings.Contains(b.String(), `"msg":"this is the message"`))
 }
+
+func TestSetCallerKey(t *testing.T) {
+	var b bytes.Buffer
+	l, err := diary.New(nil, diary.SetWriter(&b), diary.SetCallerKey("caller"))
+	assert.Nil(t, err)
+	assert.NotNil(t, l)
+	l.Info("caller stack")
+	assert.True(t, strings.Contains(b.String(), `"caller":`))
+}
