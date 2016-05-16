@@ -1,4 +1,4 @@
-package diary_test
+package diary
 
 import (
 	"bytes"

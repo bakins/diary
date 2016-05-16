@@ -41,6 +41,14 @@ type (
 	}
 )
 
+var (
+	defaultLogger *Logger
+)
+
+func init() {
+	defaultLogger = New(nil)
+}
+
 // SetLevel creates a function that sets the log level. Generally, used when create a new logger.
 func SetLevel(lvl Level) func(*Logger) {
 	return func(l *Logger) {
@@ -218,4 +226,24 @@ func LevelFromString(levelString string) (Level, bool) {
 	default:
 		return LevelDebug, false
 	}
+}
+
+// Fatal uses the default logger to log a message at the "fatal" log level. It then calls os.Exit
+func Fatal(msg string, context ...Context) {
+	defaultLogger.Fatal(msg, context...)
+}
+
+// Error uses the default logger to log a message at the "error" log level.
+func Error(msg string, context ...Context) {
+	defaultLogger.Error(msg, context...)
+}
+
+// Info uses the default logger to log a message at the "info" log level.
+func Info(msg string, context ...Context) {
+	defaultLogger.Info(msg, context...)
+}
+
+// Debug uses the default logger to log a message at the "debug" log level.
+func Debug(msg string, context ...Context) {
+	defaultLogger.Debug(msg, context...)
 }
