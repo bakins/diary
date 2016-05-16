@@ -1,5 +1,8 @@
 package diary
 
+// This code was taken from
+// https://github.com/go-stack/stack
+
 import (
 	"bytes"
 	"errors"

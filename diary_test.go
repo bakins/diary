@@ -2,7 +2,6 @@ package diary_test
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -39,7 +38,7 @@ func TestDebug(t *testing.T) {
 	assert.NotNil(t, l)
 
 	l.Debug("this is the message")
-	assert.False(t, strings.Contains(b.String(), `"message":"this is the message"`))
+	assert.True(t, strings.Contains(b.String(), `"message":"this is the message"`))
 }
 
 func TestContext(t *testing.T) {
@@ -90,7 +89,7 @@ func TestSetMessageKey(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, l)
 	l.Debug("this is the message")
-	assert.False(t, strings.Contains(b.String(), `"msg":"this is the message"`))
+	assert.True(t, strings.Contains(b.String(), `"msg":"this is the message"`))
 }
 
 func TestSetCallerKey(t *testing.T) {
@@ -99,6 +98,5 @@ func TestSetCallerKey(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, l)
 	l.Info("caller stack")
-	fmt.Println(b.String())
 	assert.True(t, strings.Contains(b.String(), `"caller":`))
 }
