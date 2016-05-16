@@ -3,7 +3,6 @@ package diary
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"time"
@@ -206,17 +205,17 @@ func (l Level) String() string {
 
 // LevelFromString returns the appropriate Level from a string name.
 // Useful for parsing command line args and configuration files.
-func LevelFromString(levelString string) (Level, error) {
+func LevelFromString(levelString string) (Level, bool) {
 	switch levelString {
 	case "debug":
-		return LevelDebug, nil
+		return LevelDebug, true
 	case "info":
-		return LevelInfo, nil
+		return LevelInfo, true
 	case "error", "eror", "err":
-		return LevelError, nil
+		return LevelError, true
 	case "fatal":
-		return LevelFatal, nil
+		return LevelFatal, true
 	default:
-		return LevelDebug, fmt.Errorf("Unknown level: %v", levelString)
+		return LevelDebug, false
 	}
 }
