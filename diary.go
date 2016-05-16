@@ -52,6 +52,11 @@ func init() {
 	defaultLogger, _ = New(nil)
 }
 
+// GetDefaultLogger returns a Logger with the default settings
+func GetDefaultLogger() *Logger {
+	return defaultLogger
+}
+
 // SetLevel creates a function that sets the log level. Generally, used when create a new logger.
 func SetLevel(lvl Level) func(*Logger) error {
 	return func(l *Logger) error {
@@ -120,12 +125,13 @@ func (l *Logger) doOptions(options []func(*Logger) error) error {
 // New creates a logger.
 func New(context Context, options ...func(*Logger) error) (*Logger, error) {
 	l := &Logger{
-		level:      LevelInfo,
+		level:      LevelDebug,
 		context:    context,
 		writer:     os.Stdout,
 		timeKey:    DefaultTimeKey,
 		levelKey:   DefaultLevelKey,
 		messageKey: DefaultMessageKey,
+		callerKey:  DefaultCallerKey,
 	}
 
 	if err := l.doOptions(options); err != nil {
