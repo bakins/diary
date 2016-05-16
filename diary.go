@@ -1,3 +1,4 @@
+// Package diary provides a simple JSON logger.
 package diary
 
 import (
@@ -8,14 +9,17 @@ import (
 	"time"
 )
 
+// Default keys for log output
 const (
 	DefaultTimeKey    = "ts"
 	DefaultLevelKey   = "lvl"
 	DefaultMessageKey = "message"
 )
 
+// Level is the level of the log entry
 type Level int
 
+// Log Levels
 const (
 	LevelFatal = iota
 	LevelError
@@ -24,8 +28,10 @@ const (
 )
 
 type (
+	// Context is a map of key/value pairs. These are Marshalled and included in the log output.
 	Context map[string]interface{}
 
+	// Logger is the actual logger. The default log level is info and the default writer is STDOUT.
 	Logger struct {
 		level      Level
 		context    Context
@@ -36,6 +42,7 @@ type (
 	}
 )
 
+// SetLevel creates a function that sets the log level. Generally, used when create a new logger.
 func SetLevel(lvl Level) func(*Logger) error {
 	return func(l *Logger) error {
 		l.level = lvl
@@ -43,6 +50,7 @@ func SetLevel(lvl Level) func(*Logger) error {
 	}
 }
 
+// SetContext creates a function that sets the context. Generally, used when create a new logger.
 func SetContext(ctx Context) func(*Logger) error {
 	return func(l *Logger) error {
 		l.context = ctx
@@ -50,6 +58,7 @@ func SetContext(ctx Context) func(*Logger) error {
 	}
 }
 
+// SetWriter creates a function that will set the writer. Generally, used when create a new logger.
 func SetWriter(w io.Writer) func(*Logger) error {
 	return func(l *Logger) error {
 		l.writer = w
@@ -57,6 +66,7 @@ func SetWriter(w io.Writer) func(*Logger) error {
 	}
 }
 
+// SetTimeKey creates a funtion that sets the time key. Generally, used when create a new logger.
 func SetTimeKey(key string) func(*Logger) error {
 	return func(l *Logger) error {
 		l.timeKey = key
@@ -64,6 +74,7 @@ func SetTimeKey(key string) func(*Logger) error {
 	}
 }
 
+// SetLevelKey creates a funtion that sets the level key. Generally, used when create a new logger.
 func SetLevelKey(key string) func(*Logger) error {
 	return func(l *Logger) error {
 		l.levelKey = key
@@ -71,6 +82,7 @@ func SetLevelKey(key string) func(*Logger) error {
 	}
 }
 
+// SetMessageKey creates a funtion that sets the message key. Generally, used when create a new logger.
 func SetMessageKey(key string) func(*Logger) error {
 	return func(l *Logger) error {
 		l.messageKey = key
@@ -87,6 +99,7 @@ func (l *Logger) doOptions(options []func(*Logger) error) error {
 	return nil
 }
 
+// New creates a logger.
 func New(context Context, options ...func(*Logger) error) (*Logger, error) {
 	l := &Logger{
 		level:      LevelInfo,
@@ -104,6 +117,7 @@ func New(context Context, options ...func(*Logger) error) (*Logger, error) {
 	return l, nil
 }
 
+// New creates a child logger.  Initial options are inherited from the parent.
 func (l *Logger) New(context Context, options ...func(*Logger) error) (*Logger, error) {
 	n := &Logger{
 		level:      l.level,
@@ -132,19 +146,23 @@ func (l *Logger) New(context Context, options ...func(*Logger) error) (*Logger, 
 	return n, nil
 }
 
+// Fatal logs a message at the "fatal" log level. It then calls os.Exit
 func (l *Logger) Fatal(msg string, context ...Context) {
 	l.write(LevelFatal, msg, context)
 	os.Exit(-1)
 }
 
+// Error logs a message at the "error" log level.
 func (l *Logger) Error(msg string, context ...Context) {
 	l.write(LevelError, msg, context)
 }
 
+// Info logs a message at the "info" log level.
 func (l *Logger) Info(msg string, context ...Context) {
 	l.write(LevelInfo, msg, context)
 }
 
+// Debug logs a message at the "debug" log level.
 func (l *Logger) Debug(msg string, context ...Context) {
 	l.write(LevelDebug, msg, context)
 }
@@ -176,7 +194,7 @@ func (l *Logger) write(level Level, msg string, context []Context) {
 	}
 }
 
-// Returns the name of a Level
+// String returns the name of a Level.
 func (l Level) String() string {
 	switch l {
 	case LevelDebug:
@@ -193,7 +211,7 @@ func (l Level) String() string {
 	}
 }
 
-// Returns the appropriate Level from a string name.
+// LevelFromString returns the appropriate Level from a string name.
 // Useful for parsing command line args and configuration files.
 func LevelFromString(levelString string) (Level, error) {
 	switch levelString {
