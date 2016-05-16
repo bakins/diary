@@ -10,18 +10,21 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	l := diary.New(nil)
+	l, err := diary.New(nil)
+	assert.Nil(t, err)
 	assert.NotNil(t, l)
 }
 
 func TestSetLevel(t *testing.T) {
-	l := diary.New(nil, diary.SetLevel(diary.LevelDebug))
+	l, err := diary.New(nil, diary.SetLevel(diary.LevelDebug))
+	assert.Nil(t, err)
 	assert.NotNil(t, l)
 }
 
 func TestLog(t *testing.T) {
 	var b bytes.Buffer
-	l := diary.New(nil, diary.SetWriter(&b))
+	l, err := diary.New(nil, diary.SetWriter(&b))
+	assert.Nil(t, err)
 	assert.NotNil(t, l)
 
 	l.Error("this is the message")
@@ -30,7 +33,8 @@ func TestLog(t *testing.T) {
 
 func TestDebug(t *testing.T) {
 	var b bytes.Buffer
-	l := diary.New(nil, diary.SetWriter(&b))
+	l, err := diary.New(nil, diary.SetWriter(&b))
+	assert.Nil(t, err)
 	assert.NotNil(t, l)
 
 	l.Debug("this is the message")
@@ -39,7 +43,8 @@ func TestDebug(t *testing.T) {
 
 func TestContext(t *testing.T) {
 	var b bytes.Buffer
-	l := diary.New(nil, diary.SetWriter(&b))
+	l, err := diary.New(nil, diary.SetWriter(&b))
+	assert.Nil(t, err)
 	assert.NotNil(t, l)
 
 	l.Error("this is the message", diary.Context{"foo": "bar"})
@@ -49,10 +54,12 @@ func TestContext(t *testing.T) {
 
 func TestChildContext(t *testing.T) {
 	var b bytes.Buffer
-	l := diary.New(nil, diary.SetWriter(&b))
+	l, err := diary.New(nil, diary.SetWriter(&b))
+	assert.Nil(t, err)
 	assert.NotNil(t, l)
 
-	n := l.New(nil)
+	n, err := l.New(nil)
+	assert.Nil(t, err)
 	assert.NotNil(t, n)
 
 	n.Error("this is the message", diary.Context{"foo": "bar"})
@@ -62,10 +69,12 @@ func TestChildContext(t *testing.T) {
 
 func TestChildContextAdd(t *testing.T) {
 	var b bytes.Buffer
-	l := diary.New(nil, diary.SetWriter(&b))
+	l, err := diary.New(nil, diary.SetWriter(&b))
+	assert.Nil(t, err)
 	assert.NotNil(t, l)
 
-	n := l.New(diary.Context{"bar": "baz"})
+	n, err := l.New(diary.Context{"bar": "baz"})
+	assert.Nil(t, err)
 	assert.NotNil(t, n)
 
 	n.Error("this is the message", diary.Context{"foo": "bar"})
@@ -76,7 +85,8 @@ func TestChildContextAdd(t *testing.T) {
 
 func TestSetMessageKey(t *testing.T) {
 	var b bytes.Buffer
-	l := diary.New(nil, diary.SetWriter(&b), diary.SetMessageKey("msg"))
+	l, err := diary.New(nil, diary.SetWriter(&b), diary.SetMessageKey("msg"))
+	assert.Nil(t, err)
 	assert.NotNil(t, l)
 	l.Debug("this is the message")
 	assert.False(t, strings.Contains(b.String(), `"msg":"this is the message"`))

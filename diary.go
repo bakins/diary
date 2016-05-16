@@ -3,6 +3,7 @@ package diary
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -46,66 +47,68 @@ var (
 )
 
 func init() {
-	defaultLogger = New(nil)
+	defaultLogger, _ = New(nil)
 }
 
 // SetLevel creates a function that sets the log level. Generally, used when create a new logger.
-func SetLevel(lvl Level) func(*Logger) {
-	return func(l *Logger) {
+func SetLevel(lvl Level) func(*Logger) error {
+	return func(l *Logger) error {
 		l.level = lvl
-		return
+		return nil
 	}
 }
 
 // SetContext creates a function that sets the context. Generally, used when create a new logger.
-func SetContext(ctx Context) func(*Logger) {
-	return func(l *Logger) {
+func SetContext(ctx Context) func(*Logger) error {
+	return func(l *Logger) error {
 		l.context = ctx
-		return
+		return nil
 	}
 }
 
 // SetWriter creates a function that will set the writer. Generally, used when create a new logger.
-func SetWriter(w io.Writer) func(*Logger) {
-	return func(l *Logger) {
+func SetWriter(w io.Writer) func(*Logger) error {
+	return func(l *Logger) error {
 		l.writer = w
-		return
+		return nil
 	}
 }
 
 // SetTimeKey creates a funtion that sets the time key. Generally, used when create a new logger.
-func SetTimeKey(key string) func(*Logger) {
-	return func(l *Logger) {
+func SetTimeKey(key string) func(*Logger) error {
+	return func(l *Logger) error {
 		l.timeKey = key
-		return
+		return nil
 	}
 }
 
 // SetLevelKey creates a funtion that sets the level key. Generally, used when create a new logger.
-func SetLevelKey(key string) func(*Logger) {
-	return func(l *Logger) {
+func SetLevelKey(key string) func(*Logger) error {
+	return func(l *Logger) error {
 		l.levelKey = key
-		return
+		return nil
 	}
 }
 
 // SetMessageKey creates a funtion that sets the message key. Generally, used when create a new logger.
-func SetMessageKey(key string) func(*Logger) {
-	return func(l *Logger) {
+func SetMessageKey(key string) func(*Logger) error {
+	return func(l *Logger) error {
 		l.messageKey = key
-		return
+		return nil
 	}
 }
 
-func (l *Logger) doOptions(options []func(*Logger)) {
+func (l *Logger) doOptions(options []func(*Logger) error) error {
 	for _, f := range options {
-		f(l)
+		if err := f(l); err != nil {
+			return err
+		}
 	}
-	return
+	return nil
 }
 
 // New creates a logger.
-func New(context Context, options ...func(*Logger)) *Logger {
+func New(context Context, options ...func(*Logger) error) (*Logger, error) {
 	l := &Logger{
 		level:      LevelInfo,
 		context:    context,
@@ -115,13 +118,15 @@ func New(context Context, options ...func(*Logger)) *Logger {
 		messageKey: DefaultMessageKey,
 	}
 
-	l.doOptions(options)
+	if err := l.doOptions(options); err != nil {
+		return nil, err
+	}
 
-	return l
+	return l, nil
 }
 
 // New creates a child logger.  Initial options are inherited from the parent.
-func (l *Logger) New(context Context, options ...func(*Logger)) *Logger {
+func (l *Logger) New(context Context, options ...func(*Logger) error) (*Logger, error) {
 	n := &Logger{
 		level:      l.level,
 		writer:     l.writer,
@@ -142,9 +147,11 @@ func (l *Logger) New(context Context, options ...func(*Logger)) *Logger {
 
 	n.context = ctx
 
-	n.doOptions(options)
+	if err := n.doOptions(options); err != nil {
+		return nil, err
+	}
 
-	return n
+	return n, nil
 }
 
 // Fatal logs a message at the "fatal" log level. It then calls os.Exit
@@ -213,18 +220,18 @@ func (l Level) String() string {
 
 // LevelFromString returns the appropriate Level from a string name.
 // Useful for parsing command line args and configuration files.
-func LevelFromString(levelString string) (Level, bool) {
+func LevelFromString(levelString string) (Level, error) {
 	switch levelString {
 	case "debug":
-		return LevelDebug, true
+		return LevelDebug, nil
 	case "info":
-		return LevelInfo, true
+		return LevelInfo, nil
 	case "error", "eror", "err":
-		return LevelError, true
+		return LevelError, nil
 	case "fatal":
-		return LevelFatal, true
+		return LevelFatal, nil
 	default:
-		return LevelDebug, false
+		return LevelDebug, fmt.Errorf("Unknown level: %v", levelString)
 	}
 }
 
