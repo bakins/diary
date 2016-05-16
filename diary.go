@@ -191,11 +191,11 @@ func (l *Logger) write(level Level, msg string, context []Context) {
 func (l Level) String() string {
 	switch l {
 	case LevelDebug:
-		return "dbug"
+		return "debug"
 	case LevelInfo:
 		return "info"
 	case LevelError:
-		return "eror"
+		return "error"
 	case LevelFatal:
 		return "fatal"
 	default:
