@@ -7,8 +7,6 @@ import (
 	"io"
 	"os"
 	"time"
-
-	"github.com/go-stack/stack"
 )
 
 // Default keys for log output
@@ -208,8 +206,7 @@ func (l *Logger) write(level Level, msg string, context []Context) {
 	record[l.timeKey] = time.Now()
 	record[l.messageKey] = msg
 	record[l.levelKey] = l.level.String()
-	record[l.callerKey] = stack.Caller(2)
-
+	record[l.callerKey] = caller(2)
 	if data, err := json.Marshal(record); err == nil {
 		data = append(data, '\n')
 		l.writer.Write(data)

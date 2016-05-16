@@ -2,6 +2,7 @@ package diary_test
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -98,5 +99,6 @@ func TestSetCallerKey(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, l)
 	l.Info("caller stack")
+	fmt.Println(b.String())
 	assert.True(t, strings.Contains(b.String(), `"caller":`))
 }
