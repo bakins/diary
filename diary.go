@@ -14,6 +14,7 @@ const (
 	DefaultTimeKey    = "ts"
 	DefaultLevelKey   = "lvl"
 	DefaultMessageKey = "message"
+	DefaultCallerKey  = "caller"
 )
 
 // Level is the level of the log entry
@@ -39,8 +40,22 @@ type (
 		timeKey    string
 		levelKey   string
 		messageKey string
+		callerKey  string
 	}
 )
+
+var (
+	defaultLogger *Logger
+)
+
+func init() {
+	defaultLogger, _ = New(nil)
+}
+
+// GetDefaultLogger returns a Logger with the default settings
+func GetDefaultLogger() *Logger {
+	return defaultLogger
+}
 
 // SetLevel creates a function that sets the log level. Generally, used when create a new logger.
 func SetLevel(lvl Level) func(*Logger) error {
@@ -90,6 +105,14 @@ func SetMessageKey(key string) func(*Logger) error {
 	}
 }
 
+// SetCallerKey creates a function that will set the caller key. Generally, used when create a new logger.
+func SetCallerKey(key string) func(*Logger) error {
+	return func(l *Logger) error {
+		l.callerKey = key
+		return nil
+	}
+}
+
 func (l *Logger) doOptions(options []func(*Logger) error) error {
 	for _, f := range options {
 		if err := f(l); err != nil {
@@ -102,12 +125,13 @@ func (l *Logger) doOptions(options []func(*Logger) error) error {
 // New creates a logger.
 func New(context Context, options ...func(*Logger) error) (*Logger, error) {
 	l := &Logger{
-		level:      LevelInfo,
+		level:      LevelDebug,
 		context:    context,
 		writer:     os.Stdout,
 		timeKey:    DefaultTimeKey,
 		levelKey:   DefaultLevelKey,
 		messageKey: DefaultMessageKey,
+		callerKey:  DefaultCallerKey,
 	}
 
 	if err := l.doOptions(options); err != nil {
@@ -120,6 +144,7 @@ func New(context Context, options ...func(*Logger) error) (*Logger, error) {
 // New creates a child logger.  Initial options are inherited from the parent.
 func (l *Logger) New(context Context, options ...func(*Logger) error) (*Logger, error) {
 	n := &Logger{
+		callerKey:  l.callerKey,
 		level:      l.level,
 		writer:     l.writer,
 		timeKey:    l.timeKey,
@@ -187,7 +212,7 @@ func (l *Logger) write(level Level, msg string, context []Context) {
 	record[l.timeKey] = time.Now()
 	record[l.messageKey] = msg
 	record[l.levelKey] = l.level.String()
-
+	record[l.callerKey] = caller(2)
 	if data, err := json.Marshal(record); err == nil {
 		data = append(data, '\n')
 		l.writer.Write(data)
@@ -198,12 +223,11 @@ func (l *Logger) write(level Level, msg string, context []Context) {
 func (l Level) String() string {
 	switch l {
 	case LevelDebug:
-		return "dbug"
+		return "debug"
 	case LevelInfo:
 		return "info"
-		return "warn"
 	case LevelError:
-		return "eror"
+		return "error"
 	case LevelFatal:
 		return "fatal"
 	default:
@@ -226,4 +250,24 @@ func LevelFromString(levelString string) (Level, error) {
 	default:
 		return LevelDebug, fmt.Errorf("Unknown level: %v", levelString)
 	}
+}
+
+// Fatal uses the default logger to log a message at the "fatal" log level. It then calls os.Exit
+func Fatal(msg string, context ...Context) {
+	defaultLogger.Fatal(msg, context...)
+}
+
+// Error uses the default logger to log a message at the "error" log level.
+func Error(msg string, context ...Context) {
+	defaultLogger.Error(msg, context...)
+}
+
+// Info uses the default logger to log a message at the "info" log level.
+func Info(msg string, context ...Context) {
+	defaultLogger.Info(msg, context...)
+}
+
+// Debug uses the default logger to log a message at the "debug" log level.
+func Debug(msg string, context ...Context) {
+	defaultLogger.Debug(msg, context...)
 }
