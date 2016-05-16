@@ -82,3 +82,12 @@ func TestChildContextAdd(t *testing.T) {
 	assert.True(t, strings.Contains(b.String(), `"foo":"bar"`))
 	assert.True(t, strings.Contains(b.String(), `"bar":"baz"`))
 }
+
+func TestSetMessageKey(t *testing.T) {
+	var b bytes.Buffer
+	l, err := diary.New(nil, diary.SetWriter(&b), diary.SetMessageKey("msg"))
+	assert.Nil(t, err)
+	assert.NotNil(t, l)
+	l.Debug("this is the message")
+	assert.False(t, strings.Contains(b.String(), `"msg":"this is the message"`))
+}

@@ -57,21 +57,21 @@ func SetWriter(w io.Writer) func(*Logger) error {
 	}
 }
 
-func TimeKey(key string) func(*Logger) error {
+func SetTimeKey(key string) func(*Logger) error {
 	return func(l *Logger) error {
 		l.timeKey = key
 		return nil
 	}
 }
 
-func LevelKey(key string) func(*Logger) error {
+func SetLevelKey(key string) func(*Logger) error {
 	return func(l *Logger) error {
 		l.levelKey = key
 		return nil
 	}
 }
 
-func MessageKey(key string) func(*Logger) error {
+func SetMessageKey(key string) func(*Logger) error {
 	return func(l *Logger) error {
 		l.messageKey = key
 		return nil
