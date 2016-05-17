@@ -6,7 +6,7 @@ Consider this beta quality.
 
 Diary is an opinionated logger. It:
 
-- logs to Stdout by default. Though any io.wroter can be used.
+- logs to Stdout by default. Though any io.writer can be used.
 - logs in json format **only**
 - does not handle concurrency or locking. This is unneeded for `os.Stdout` and `os.Stderr`.  The Typical use case is to create a logger and then it is read only, except for actually logging.  If you need locking, implement it in a wrapping structure and/or in your writer.
 
