@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"time"
 )
 
@@ -15,6 +16,7 @@ const (
 	DefaultLevelKey   = "lvl"
 	DefaultMessageKey = "message"
 	DefaultCallerKey  = "caller"
+	DefaultCallerSkip = 2
 )
 
 // Level is the level of the log entry
@@ -29,10 +31,14 @@ const (
 )
 
 type (
+
+	// OptionsFunc is a function passed to new for setting options on a new logger.
+	OptionsFunc func(*Logger) error
+
 	// Context is a map of key/value pairs. These are Marshalled and included in the log output.
 	Context map[string]interface{}
 
-	// Logger is the actual logger. The default log level is info and the default writer is STDOUT.
+	// Logger is the actual logger. The default log level is debug and the default writer is STDOUT.
 	Logger struct {
 		level      Level
 		context    Context
@@ -41,6 +47,12 @@ type (
 		levelKey   string
 		messageKey string
 		callerKey  string
+		callerSkip int
+	}
+
+	// A Value generates a log value. It represents a dynamic value which is re-evaluated with each log event.
+	Value struct {
+		Func interface{}
 	}
 )
 
@@ -113,7 +125,20 @@ func SetCallerKey(key string) func(*Logger) error {
 	}
 }
 
-func (l *Logger) doOptions(options []func(*Logger) error) error {
+// SetCallerSkip creates a function that will set the caller stack skip. Generally, used when create a new logger.
+// This can be used if you call the logger fromyour own utility function but want the caller info for the caller
+// of your own utility function rather than the utility function.
+func SetCallerSkip(i int) func(*Logger) error {
+	return func(l *Logger) error {
+		if i < DefaultCallerSkip {
+			return fmt.Errorf("caller ship must be >= %d", DefaultCallerSkip)
+		}
+		l.callerSkip = i
+		return nil
+	}
+}
+
+func (l *Logger) doOptions(options []OptionsFunc) error {
 	for _, f := range options {
 		if err := f(l); err != nil {
 			return err
@@ -123,7 +148,7 @@ func (l *Logger) doOptions(options []func(*Logger) error) error {
 }
 
 // New creates a logger.
-func New(context Context, options ...func(*Logger) error) (*Logger, error) {
+func New(context Context, options ...OptionsFunc) (*Logger, error) {
 	l := &Logger{
 		level:      LevelDebug,
 		context:    context,
@@ -132,6 +157,7 @@ func New(context Context, options ...func(*Logger) error) (*Logger, error) {
 		levelKey:   DefaultLevelKey,
 		messageKey: DefaultMessageKey,
 		callerKey:  DefaultCallerKey,
+		callerSkip: DefaultCallerSkip,
 	}
 
 	if err := l.doOptions(options); err != nil {
@@ -141,8 +167,9 @@ func New(context Context, options ...func(*Logger) error) (*Logger, error) {
 	return l, nil
 }
 
-// New creates a child logger.  Initial options are inherited from the parent.
-func (l *Logger) New(context Context, options ...func(*Logger) error) (*Logger, error) {
+// New creates a copy of the logger with additional options.  Initial options are inherited from the original.
+// The two loggers are independent.
+func (l *Logger) New(context Context, options ...OptionsFunc) (*Logger, error) {
 	n := &Logger{
 		callerKey:  l.callerKey,
 		level:      l.level,
@@ -150,6 +177,7 @@ func (l *Logger) New(context Context, options ...func(*Logger) error) (*Logger, 
 		timeKey:    l.timeKey,
 		levelKey:   l.levelKey,
 		messageKey: l.messageKey,
+		callerSkip: l.callerSkip,
 	}
 
 	ctx := make(Context)
@@ -209,30 +237,33 @@ func (l *Logger) write(level Level, msg string, context []Context) {
 		}
 	}
 
-	record[l.timeKey] = time.Now()
+	record[l.timeKey] = time.Now().Format(time.RFC3339Nano)
 	record[l.messageKey] = msg
 	record[l.levelKey] = l.level.String()
-	record[l.callerKey] = caller(2)
+	record[l.callerKey] = caller(l.callerSkip)
+
 	if data, err := json.Marshal(record); err == nil {
 		data = append(data, '\n')
 		l.writer.Write(data)
+	} else {
+		fmt.Println(err)
 	}
+
+}
+
+var levelsMap = map[Level]string{
+	LevelDebug: "debug",
+	LevelInfo:  "info",
+	LevelError: "error",
+	LevelFatal: "fatal",
 }
 
 // String returns the name of a Level.
 func (l Level) String() string {
-	switch l {
-	case LevelDebug:
-		return "debug"
-	case LevelInfo:
-		return "info"
-	case LevelError:
-		return "error"
-	case LevelFatal:
-		return "fatal"
-	default:
-		return "unknown"
+	if v, ok := levelsMap[l]; ok {
+		return v
 	}
+	return "unknown"
 }
 
 // LevelFromString returns the appropriate Level from a string name.
@@ -270,4 +301,34 @@ func Info(msg string, context ...Context) {
 // Debug uses the default logger to log a message at the "debug" log level.
 func Debug(msg string, context ...Context) {
 	defaultLogger.Debug(msg, context...)
+}
+
+func (v Value) MarshalJSON() ([]byte, error) {
+	// copied from evaluateLazy in log15
+
+	t := reflect.TypeOf(v.Func)
+	// we do not currently add errors to the log entries, so these may go unnoticed
+	// TODO: handled json errors better
+	if t.Kind() != reflect.Func {
+		return nil, fmt.Errorf("not func: %+v", v.Func)
+	}
+
+	if t.NumIn() > 0 {
+		return nil, fmt.Errorf("func takes args: %+v", v.Func)
+	}
+
+	if t.NumOut() == 0 {
+		return nil, fmt.Errorf("no func return val: %+v", v.Func)
+	}
+	value := reflect.ValueOf(v.Func)
+	results := value.Call([]reflect.Value{})
+	if len(results) == 1 {
+		return json.Marshal(results[0].Interface())
+	} else {
+		values := make([]interface{}, len(results))
+		for i, v := range results {
+			values[i] = v.Interface()
+		}
+		return json.Marshal(values)
+	}
 }
