@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/YikYakApp/exp/users/bakins/diary"
+	"github.com/bakins/diary"
 	"github.com/stretchr/testify/assert"
 )
 
