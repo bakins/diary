@@ -233,6 +233,9 @@ func (l *Logger) write(level Level, msg string, context []Context) {
 
 	for _, ctx := range context {
 		for k, v := range ctx {
+			if y, ok := v.(error); ok {
+				v = y.Error()
+			}
 			record[k] = v
 		}
 	}
