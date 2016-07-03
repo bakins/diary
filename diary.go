@@ -16,6 +16,7 @@ const (
 	DefaultLevelKey   = "lvl"
 	DefaultMessageKey = "message"
 	DefaultCallerKey  = "caller"
+	DefaultErrorKey   = "error"
 	DefaultCallerSkip = 2
 )
 
@@ -47,6 +48,7 @@ type (
 		levelKey   string
 		messageKey string
 		callerKey  string
+		errorKey   string
 		callerSkip int
 	}
 
@@ -125,6 +127,14 @@ func SetCallerKey(key string) func(*Logger) error {
 	}
 }
 
+// SetErrorKey creates a function that will set the error key. Generally, used when create a new logger.
+func SetErrorKey(key string) func(*Logger) error {
+	return func(l *Logger) error {
+		l.errorKey = key
+		return nil
+	}
+}
+
 // SetCallerSkip creates a function that will set the caller stack skip. Generally, used when create a new logger.
 // This can be used if you call the logger fromyour own utility function but want the caller info for the caller
 // of your own utility function rather than the utility function.
@@ -157,6 +167,7 @@ func New(context Context, options ...OptionsFunc) (*Logger, error) {
 		levelKey:   DefaultLevelKey,
 		messageKey: DefaultMessageKey,
 		callerKey:  DefaultCallerKey,
+		errorKey:   DefaultErrorKey,
 		callerSkip: DefaultCallerSkip,
 	}
 
@@ -177,6 +188,7 @@ func (l *Logger) New(context Context, options ...OptionsFunc) (*Logger, error) {
 		timeKey:    l.timeKey,
 		levelKey:   l.levelKey,
 		messageKey: l.messageKey,
+		errorKey:   l.errorKey,
 		callerSkip: l.callerSkip,
 	}
 
@@ -200,27 +212,27 @@ func (l *Logger) New(context Context, options ...OptionsFunc) (*Logger, error) {
 }
 
 // Fatal logs a message at the "fatal" log level. It then calls os.Exit
-func (l *Logger) Fatal(msg string, context ...Context) {
-	l.write(LevelFatal, msg, context)
+func (l *Logger) Fatal(msg string, err error, context ...Context) {
+	l.write(LevelFatal, msg, err, context)
 	os.Exit(-1)
 }
 
 // Error logs a message at the "error" log level.
-func (l *Logger) Error(msg string, context ...Context) {
-	l.write(LevelError, msg, context)
+func (l *Logger) Error(msg string, err error, context ...Context) {
+	l.write(LevelError, msg, err, context)
 }
 
 // Info logs a message at the "info" log level.
 func (l *Logger) Info(msg string, context ...Context) {
-	l.write(LevelInfo, msg, context)
+	l.write(LevelInfo, msg, nil, context)
 }
 
 // Debug logs a message at the "debug" log level.
 func (l *Logger) Debug(msg string, context ...Context) {
-	l.write(LevelDebug, msg, context)
+	l.write(LevelDebug, msg, nil, context)
 }
 
-func (l *Logger) write(level Level, msg string, context []Context) {
+func (l *Logger) write(level Level, msg string, logErr error, context []Context) {
 	if level > l.level {
 		return
 	}
@@ -244,6 +256,10 @@ func (l *Logger) write(level Level, msg string, context []Context) {
 	record[l.messageKey] = msg
 	record[l.levelKey] = level.String()
 	record[l.callerKey] = caller(l.callerSkip)
+
+	if logErr != nil {
+		record[l.errorKey] = logErr.Error()
+	}
 
 	if data, err := json.Marshal(record); err == nil {
 		data = append(data, '\n')
@@ -287,13 +303,13 @@ func LevelFromString(levelString string) (Level, error) {
 }
 
 // Fatal uses the default logger to log a message at the "fatal" log level. It then calls os.Exit
-func Fatal(msg string, context ...Context) {
-	defaultLogger.Fatal(msg, context...)
+func Fatal(msg string, err error, context ...Context) {
+	defaultLogger.Fatal(msg, err, context...)
 }
 
 // Error uses the default logger to log a message at the "error" log level.
-func Error(msg string, context ...Context) {
-	defaultLogger.Error(msg, context...)
+func Error(msg string, err error, context ...Context) {
+	defaultLogger.Error(msg, err, context...)
 }
 
 // Info uses the default logger to log a message at the "info" log level.
