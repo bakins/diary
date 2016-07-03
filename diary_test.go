@@ -132,3 +132,16 @@ func BenchmarkDiaryWithCtx(b *testing.B) {
 		l.Error("something happened", diary.Context{"foo": "bar", "user": 1768, "things": []string{"one", "two"}})
 	}
 }
+
+func TestLevel(t *testing.T) {
+	var b bytes.Buffer
+	l, err := diary.New(nil, diary.SetWriter(&b))
+	assert.Nil(t, err)
+	assert.NotNil(t, l)
+
+	l.Debug("this is the message")
+	assert.True(t, strings.Contains(b.String(), `"lvl":"debug"`))
+
+	l.Error("this is the message")
+	assert.True(t, strings.Contains(b.String(), `"lvl":"error"`))
+}

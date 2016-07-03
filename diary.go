@@ -242,7 +242,7 @@ func (l *Logger) write(level Level, msg string, context []Context) {
 
 	record[l.timeKey] = time.Now().Format(time.RFC3339Nano)
 	record[l.messageKey] = msg
-	record[l.levelKey] = l.level.String()
+	record[l.levelKey] = level.String()
 	record[l.callerKey] = caller(l.callerSkip)
 
 	if data, err := json.Marshal(record); err == nil {
