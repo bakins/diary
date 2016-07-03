@@ -2,6 +2,7 @@ package diary_test
 
 import (
 	"bytes"
+	"errors"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -28,7 +29,7 @@ func TestLog(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, l)
 
-	l.Error("this is the message")
+	l.Info("this is the message")
 	assert.True(t, strings.Contains(b.String(), `"message":"this is the message"`))
 }
 
@@ -48,7 +49,7 @@ func TestContext(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, l)
 
-	l.Error("this is the message", diary.Context{"foo": "bar"})
+	l.Info("this is the message", diary.Context{"foo": "bar"})
 	assert.True(t, strings.Contains(b.String(), `"message":"this is the message"`))
 	assert.True(t, strings.Contains(b.String(), `"foo":"bar"`))
 }
@@ -63,7 +64,7 @@ func TestChildContext(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, n)
 
-	n.Error("this is the message", diary.Context{"foo": "bar"})
+	n.Info("this is the message", diary.Context{"foo": "bar"})
 	assert.True(t, strings.Contains(b.String(), `"message":"this is the message"`))
 	assert.True(t, strings.Contains(b.String(), `"foo":"bar"`))
 }
@@ -78,7 +79,7 @@ func TestChildContextAdd(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, n)
 
-	n.Error("this is the message", diary.Context{"foo": "bar"})
+	n.Info("this is the message", diary.Context{"foo": "bar"})
 	assert.True(t, strings.Contains(b.String(), `"message":"this is the message"`))
 	assert.True(t, strings.Contains(b.String(), `"foo":"bar"`))
 	assert.True(t, strings.Contains(b.String(), `"bar":"baz"`))
@@ -122,14 +123,14 @@ func TestValuer(t *testing.T) {
 func BenchmarkDiary(b *testing.B) {
 	l, _ := diary.New(nil, diary.SetWriter(ioutil.Discard))
 	for i := 0; i < b.N; i++ {
-		l.Error("something happened", diary.Context{"foo": "bar", "user": 1768, "things": []string{"one", "two"}})
+		l.Info("something happened", diary.Context{"foo": "bar", "user": 1768, "things": []string{"one", "two"}})
 	}
 }
 
 func BenchmarkDiaryWithCtx(b *testing.B) {
 	l, _ := diary.New(diary.Context{"this": "that", "and": "other"}, diary.SetWriter(ioutil.Discard))
 	for i := 0; i < b.N; i++ {
-		l.Error("something happened", diary.Context{"foo": "bar", "user": 1768, "things": []string{"one", "two"}})
+		l.Info("something happened", diary.Context{"foo": "bar", "user": 1768, "things": []string{"one", "two"}})
 	}
 }
 
@@ -142,6 +143,17 @@ func TestLevel(t *testing.T) {
 	l.Debug("this is the message")
 	assert.True(t, strings.Contains(b.String(), `"lvl":"debug"`))
 
-	l.Error("this is the message")
+	l.Info("this is the message")
+	assert.True(t, strings.Contains(b.String(), `"lvl":"info"`))
+}
+
+func TestError(t *testing.T) {
+	var b bytes.Buffer
+	l, err := diary.New(nil, diary.SetWriter(&b))
+	assert.Nil(t, err)
+	assert.NotNil(t, l)
+
+	l.Error("this is the message", errors.New("this is an error"))
 	assert.True(t, strings.Contains(b.String(), `"lvl":"error"`))
+	assert.True(t, strings.Contains(b.String(), `"error":"this is an error"`))
 }
