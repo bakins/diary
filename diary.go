@@ -346,41 +346,42 @@ func (l *Logger) marshalRecord(level Level, msg string, logErr error, record map
 
 	var buf bytes.Buffer
 	buf.Grow(1024)
-	buf.WriteString(`{"`)
+	buf.Write([]byte(`{"`))
 
 	// time
 	buf.WriteString(l.timeKey)
-	buf.WriteString(`":"`)
+	buf.Write([]byte(`":"`))
 	buf.WriteString(time.Now().Format(time.RFC3339Nano))
-	buf.WriteString(`","`)
+	buf.Write([]byte(`","`))
 	//message
 	buf.WriteString(l.messageKey)
-	buf.WriteString(`":"`)
+	buf.Write([]byte(`":"`))
 	buf.WriteString(msg)
-	buf.WriteString(`","`)
+	buf.Write([]byte(`","`))
 	//level
 	buf.WriteString(l.levelKey)
-	buf.WriteString(`":"`)
+	buf.Write([]byte(`":"`))
 	buf.WriteString(level.String())
-	buf.WriteString(`","`)
+	buf.Write([]byte(`","`))
 	//caller
 	buf.WriteString(l.callerKey)
-	buf.WriteString(`":"`)
+	buf.Write([]byte(`":"`))
 	buf.WriteString(caller(l.callerSkip).String())
-	buf.WriteString(`"`)
+	buf.Write([]byte(`","`))
 	//error
 	if logErr != nil {
-		buf.WriteString(`,"`)
+		buf.Write([]byte(`,"`))
 		buf.WriteString(l.errorKey)
-		buf.WriteString(`":"`)
+		buf.Write([]byte(`":"`))
 		buf.WriteString(logErr.Error())
-		buf.WriteString(`"`)
+		buf.WriteByte('"')
 	}
 
 	for k, v := range record {
-		buf.WriteString(`,"`)
+		buf.Write([]byte(`,"`))
 		buf.WriteString(k)
-		buf.WriteString(`":`)
+		buf.Write([]byte(`":`))
+
 		switch v.(type) {
 
 		case error:
@@ -416,12 +417,9 @@ func (l *Logger) marshalRecord(level Level, msg string, logErr error, record map
 			}
 			buf.Write(data)
 		}
-
-		//buf.WriteString(`"`)
 	}
 
-	buf.WriteByte('}')
-	buf.WriteByte('\n')
+	buf.Write([]byte("}\n"))
 
 	return buf.Bytes(), nil
 }
