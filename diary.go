@@ -2,11 +2,13 @@
 package diary
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"reflect"
+	"strconv"
 	"time"
 )
 
@@ -245,24 +247,11 @@ func (l *Logger) write(level Level, msg string, logErr error, context []Context)
 
 	for _, ctx := range context {
 		for k, v := range ctx {
-			if y, ok := v.(error); ok {
-				v = y.Error()
-			}
 			record[k] = v
 		}
 	}
 
-	record[l.timeKey] = time.Now().Format(time.RFC3339Nano)
-	record[l.messageKey] = msg
-	record[l.levelKey] = level.String()
-	record[l.callerKey] = caller(l.callerSkip)
-
-	if logErr != nil {
-		record[l.errorKey] = logErr.Error()
-	}
-
-	if data, err := json.Marshal(record); err == nil {
-		data = append(data, '\n')
+	if data, err := l.marshalRecord(level, msg, logErr, record); err == nil {
 		l.writer.Write(data)
 	} else {
 		fmt.Println(err)
@@ -350,4 +339,89 @@ func (v Value) MarshalJSON() ([]byte, error) {
 		}
 		return json.Marshal(values)
 	}
+}
+
+// could use sync.pool
+func (l *Logger) marshalRecord(level Level, msg string, logErr error, record map[string]interface{}) ([]byte, error) {
+
+	var buf bytes.Buffer
+	buf.Grow(1024)
+	buf.WriteString(`{"`)
+
+	// time
+	buf.WriteString(l.timeKey)
+	buf.WriteString(`":"`)
+	buf.WriteString(time.Now().Format(time.RFC3339Nano))
+	buf.WriteString(`","`)
+	//message
+	buf.WriteString(l.messageKey)
+	buf.WriteString(`":"`)
+	buf.WriteString(msg)
+	buf.WriteString(`","`)
+	//level
+	buf.WriteString(l.levelKey)
+	buf.WriteString(`":"`)
+	buf.WriteString(level.String())
+	buf.WriteString(`","`)
+	//caller
+	buf.WriteString(l.callerKey)
+	buf.WriteString(`":"`)
+	buf.WriteString(caller(l.callerSkip).String())
+	buf.WriteString(`"`)
+	//error
+	if logErr != nil {
+		buf.WriteString(`,"`)
+		buf.WriteString(l.errorKey)
+		buf.WriteString(`":"`)
+		buf.WriteString(logErr.Error())
+		buf.WriteString(`"`)
+	}
+
+	for k, v := range record {
+		buf.WriteString(`,"`)
+		buf.WriteString(k)
+		buf.WriteString(`":`)
+		switch v.(type) {
+
+		case error:
+			s := v.(error).Error()
+			data, err := json.Marshal(s)
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(data)
+
+		case int:
+			buf.WriteString(strconv.Itoa(v.(int)))
+		case int64:
+			buf.WriteString(strconv.FormatInt(v.(int64), 10))
+		case float64:
+			buf.WriteString(strconv.FormatFloat(v.(float64), 'G', 16, 64))
+		case bool:
+			if v.(bool) {
+				buf.Write([]byte("true"))
+			} else {
+				buf.Write([]byte("false"))
+			}
+		case Value:
+			data, err := v.(Value).MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(data)
+		default:
+			data, err := json.Marshal(v)
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(data)
+		}
+
+		//buf.WriteString(`"`)
+	}
+
+	buf.WriteByte('}')
+	buf.WriteByte('\n')
+
+	return buf.Bytes(), nil
 }

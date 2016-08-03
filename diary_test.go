@@ -157,3 +157,54 @@ func TestError(t *testing.T) {
 	assert.True(t, strings.Contains(b.String(), `"lvl":"error"`))
 	assert.True(t, strings.Contains(b.String(), `"error":"this is an error"`))
 }
+
+func TestInt(t *testing.T) {
+	var b bytes.Buffer
+	l, err := diary.New(nil, diary.SetWriter(&b))
+	assert.Nil(t, err)
+	assert.NotNil(t, l)
+
+	l.Debug("this is the message", diary.Context{"int": 987654321})
+	assert.True(t, strings.Contains(b.String(), `"lvl":"debug"`))
+	assert.True(t, strings.Contains(b.String(), `"int":987654321`))
+}
+
+func TestFloat(t *testing.T) {
+	var b bytes.Buffer
+	l, err := diary.New(nil, diary.SetWriter(&b))
+	assert.Nil(t, err)
+	assert.NotNil(t, l)
+
+	l.Debug("this is the message", diary.Context{"float": 98765.4321})
+	assert.True(t, strings.Contains(b.String(), `"lvl":"debug"`))
+	assert.True(t, strings.Contains(b.String(), `"float":98765.4321`))
+}
+
+func TestBool(t *testing.T) {
+	var b bytes.Buffer
+	l, err := diary.New(nil, diary.SetWriter(&b))
+	assert.Nil(t, err)
+	assert.NotNil(t, l)
+
+	l.Debug("this is the message", diary.Context{"bool": true})
+	assert.True(t, strings.Contains(b.String(), `"lvl":"debug"`))
+	assert.True(t, strings.Contains(b.String(), `"bool":true`))
+}
+
+func TestStruct(t *testing.T) {
+	var b bytes.Buffer
+	l, err := diary.New(nil, diary.SetWriter(&b))
+	assert.Nil(t, err)
+	assert.NotNil(t, l)
+
+	v := struct {
+		Foo bool
+		Bar int
+	}{
+		Foo: false,
+		Bar: 12345678,
+	}
+	l.Debug("this is the message", diary.Context{"struct": v})
+	assert.True(t, strings.Contains(b.String(), `"lvl":"debug"`))
+	assert.True(t, strings.Contains(b.String(), `"struct":{"Foo":false`))
+}
